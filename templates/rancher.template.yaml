@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   This template installs rancher in an EKS cluster spanning separate Availability Zones
   inside a VPC.  The Rancher installation creates a Network Load Balancer and Route 53 domain records
@@ -55,11 +55,13 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
-    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+    ConstraintDescription:
+      Quick Start bucket name can include numbers, lowercase
       letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
       (-).
     Default: aws-quickstart
-    Description: S3 bucket name for the Quick Start assets. Quick Start bucket name
+    Description:
+      S3 bucket name for the Quick Start assets. Quick Start bucket name
       can include numbers, lowercase letters, uppercase letters, and hyphens (-).
       It cannot start or end with a hyphen (-).
     Type: String
@@ -69,10 +71,12 @@ Parameters:
     Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
-    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+    ConstraintDescription:
+      Quick Start key prefix can include numbers, lowercase letters,
       uppercase letters, hyphens (-), and forward slash (/).
     Default: quickstart-eks-rancher/
-    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+    Description:
+      S3 key prefix for the Quick Start assets. Quick Start key prefix
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
     Type: String
@@ -90,9 +94,12 @@ Parameters:
     Description: DNS domain name that users can use to access the Rancher console.
     Type: String
     Default: aws.private
+  PermissionBoundary:
+    Description: Permission Boundary to attach to IAM Roles created by this template
+    Type: String
 
 Conditions:
-  NoDomainSpecified: !Equals [ !Ref DomainName, '' ]
+  NoDomainSpecified: !Equals [!Ref DomainName, ""]
 
 Resources:
   SSMAutomationRole:
@@ -100,7 +107,7 @@ Resources:
     Properties:
       Policies:
         - PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Action:
                   - s3:GetObject
@@ -108,7 +115,7 @@ Resources:
                 Effect: Allow
           PolicyName: aws-quick-start-s3-policy
         - PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Action:
                   - ssm:GetParameters
@@ -116,15 +123,15 @@ Resources:
                 Effect: Allow
           PolicyName: aws-quick-start-ssm-param-store-policy
         - PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - cloudformation:SignalResource
-                Resource: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*'
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*"
           PolicyName: aws-quick-start-cfn-signal-policy
         - PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -144,45 +151,49 @@ Resources:
                   - iam:GetPolicy
                   - iam:ListPolicyVersions
                   - iam:DeletePolicy
-                Resource: '*'
+                Resource: "*"
           PolicyName: aws-quick-start-create-role-policy
       Path: /
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              Service: 
+              Service:
                 - ssm.amazonaws.com
             Action: sts:AssumeRole
+      PermissionsBoundary:
+        Ref: PermissionBoundary
       ManagedPolicyArns:
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMFullAccess'
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess'
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEC2FullAccess'
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMFullAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEC2FullAccess"
   LambdaSSMRole:
     Type: AWS::IAM::Role
     Properties:
       Policies:
         - PolicyDocument:
-           Version: '2012-10-17'
-           Statement:
-             - Effect: Allow
-               Action:
-                 - iam:PassRole
-               Resource: !GetAtt SSMAutomationRole.Arn
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: !GetAtt SSMAutomationRole.Arn
           PolicyName: QS-SSM-PassRole
       Path: /
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              Service: 
+              Service:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
+      PermissionsBoundary:
+        Ref: PermissionBoundary
       ManagedPolicyArns:
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole'
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole"
   RancherInstallerSetup:
     Type: AWS::SSM::Document
     Properties:
@@ -231,208 +242,208 @@ Resources:
             type: "String"
             default: !Ref "AWS::Region"
         mainSteps:
-        - name:  CreateStack
-          action: aws:createStack
-          onFailure: "step:CFNSignalEnd"
-          inputs:
-            StackName: "InstallRancher"
-            Capabilities: [ "CAPABILITY_IAM" ]
-            TemplateBody: |
-              Description: "Deploy Instance to install Rancher"
+          - name: CreateStack
+            action: aws:createStack
+            onFailure: "step:CFNSignalEnd"
+            inputs:
+              StackName: "InstallRancher"
+              Capabilities: ["CAPABILITY_IAM"]
+              TemplateBody: |
+                Description: "Deploy Instance to install Rancher"
+                Parameters:
+                  LINUXBASE:
+                    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+                    Default: '/aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2'
+                  QSS3BucketName:
+                    Type: "String"
+                    Default: "{{QSS3BucketName}}"
+                    Description: "Name of Target S3 Bucket"
+                  QSS3BucketRegion:
+                    Default: "us-east-2"
+                    Description: "The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value."
+                    Type: "String"
+                  QSS3KeyPrefix:
+                    Type: "String"
+                    Default: "{{QSS3KeyPrefix}}"
+                    Description: "Name of Target S3 Prefix"
+                  Subnet:
+                    Description: "Subnet to deploy the EC2 instnace"
+                    Default: "{{PrivateSubnet1ID}}"
+                    Type: "String"
+                  EKSClusterName:
+                    Description: EKS Cluster Name
+                    Type: "String"
+                    Default: "{{EKSClusterName}}"
+                  IAMRole:
+                    Description: IAM role for the installer to use
+                    Type: "String"
+                    Default: "{{IAMRole}}"
+                  SecurityGroup:
+                    Description: Security group for the installer to use
+                    Type: "AWS::EC2::SecurityGroup::Id"
+                    Default: "{{SecurityGroup}}"
+                  DomainName:
+                    Description: DNS domain name that users can use to access the Rancher console
+                    Type: "String"
+                    Default: "{{DomainName}}"
+                Resources:
+                  RancherManagedS3Policy:
+                    Type: 'AWS::IAM::ManagedPolicy'
+                    Properties:
+                      PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                          - Action:
+                              - s3:GetObject
+                              - s3:ListBucket
+                            Resource: "*"
+                            Effect: Allow
+                      Roles:
+                      - !Ref IAMRole
+                  RancherManagedR53Policy:
+                    Type: 'AWS::IAM::ManagedPolicy'
+                    Properties:
+                      PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                          - Action:
+                              - route53:CreateHostedZone
+                              - route53:DisassociateVPCFromHostedZone
+                              - route53:GetHostedZone
+                              - route53:ListHostedZones
+                              - route53:ChangeResourceRecordSets
+                              - route53:CreateQueryLoggingConfig
+                              - route53:CreateVPCAssociationAuthorization
+                              - route53:UpdateHealthCheck
+                              - route53:DeleteHealthCheck
+                              - route53:ListHostedZonesByName
+                              - route53:DeleteVPCAssociationAuthorization
+                              - route53:CreateHealthCheck
+                              - route53:ListResourceRecordSets
+                              - route53:DeleteHostedZone
+                              - route53:AssociateVPCWithHostedZone
+                              - route53:UpdateHostedZoneComment
+                              - route53:DeleteQueryLoggingConfig
+                              - elasticloadbalancing:DescribeLoadBalancers
+                            Resource: "*"
+                            Effect: Allow
+                      Roles:
+                      - !Ref IAMRole
+                  RancherManagedEKSPolicy:
+                    Type: 'AWS::IAM::ManagedPolicy'
+                    Properties:
+                      PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                          - Action:
+                              - cloudformation:*
+                              - eks:*
+                              - ec2:DescribeSecurityGroups
+                              - ec2:DescribeSubnets
+                              - ec2:DescribeVpcs
+                              - ec2:DescribeAccountAttributes
+                              - ec2:DescribeAddresses
+                              - ec2:DescribeInternetGateways
+                            Resource: "*"
+                            Effect: Allow
+                      Roles:
+                      - !Ref IAMRole
+                  IamInstanceProfile:
+                    Type: "AWS::IAM::InstanceProfile"
+                    Properties:
+                      Roles:
+                      - !Ref IAMRole
+                  EC2Instance:
+                    Type: "AWS::EC2::Instance"
+                    Properties:
+                      ImageId: !Ref LINUXBASE
+                      InstanceType: "t2.micro"
+                      IamInstanceProfile: !Ref IamInstanceProfile
+                      SubnetId: !Ref Subnet
+                      SecurityGroupIds:
+                        - !Ref 'SecurityGroup'
+                      Tags:
+                      - Key: "Name"
+                        Value: "TempRancherInstance"
+                      UserData:
+                        Fn::Base64: !Sub |
+                          #cloud-config
+                          repo_upgrade: none
+          - name: "getInstanceId"
+            action: aws:executeAwsApi
+            onFailure: "step:CFNSignalEnd"
+            inputs:
+              Service: ec2
+              Api: DescribeInstances
+              Filters:
+                - Name: "tag:Name"
+                  Values: ["TempRancherInstance"]
+                - Name: "instance-state-name"
+                  Values: ["running"]
+            outputs:
+              - Name: InstanceId
+                Selector: "$.Reservations[0].Instances[0].InstanceId"
+                Type: String
+          - name: "DownloadAndRunRancherInstallScript"
+            action: "aws:runCommand"
+            onFailure: "step:signalfailure"
+            inputs:
+              DocumentName: "AWS-RunShellScript"
+              InstanceIds:
+                - "{{getInstanceId.InstanceId}}"
+              CloudWatchOutputConfig:
+                CloudWatchOutputEnabled: "true"
+                CloudWatchLogGroupName: !Sub "/aws/Quick_Start/${AWS::StackName}"
               Parameters:
-                LINUXBASE:
-                  Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-                  Default: '/aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2'
-                QSS3BucketName:
-                  Type: "String"
-                  Default: "{{QSS3BucketName}}"
-                  Description: "Name of Target S3 Bucket"
-                QSS3BucketRegion:
-                  Default: "us-east-2"
-                  Description: "The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value."
-                  Type: "String"
-                QSS3KeyPrefix:
-                  Type: "String"
-                  Default: "{{QSS3KeyPrefix}}"
-                  Description: "Name of Target S3 Prefix"
-                Subnet:
-                  Description: "Subnet to deploy the EC2 instnace"
-                  Default: "{{PrivateSubnet1ID}}"
-                  Type: "String"
-                EKSClusterName:
-                  Description: EKS Cluster Name
-                  Type: "String"
-                  Default: "{{EKSClusterName}}"
-                IAMRole:
-                  Description: IAM role for the installer to use
-                  Type: "String"
-                  Default: "{{IAMRole}}"
-                SecurityGroup:
-                  Description: Security group for the installer to use
-                  Type: "AWS::EC2::SecurityGroup::Id"
-                  Default: "{{SecurityGroup}}"
-                DomainName:
-                  Description: DNS domain name that users can use to access the Rancher console
-                  Type: "String"
-                  Default: "{{DomainName}}"
-              Resources:
-                RancherManagedS3Policy:
-                  Type: 'AWS::IAM::ManagedPolicy'
-                  Properties:
-                    PolicyDocument:
-                      Version: '2012-10-17'
-                      Statement:
-                        - Action:
-                            - s3:GetObject
-                            - s3:ListBucket
-                          Resource: "*"
-                          Effect: Allow
-                    Roles:
-                    - !Ref IAMRole
-                RancherManagedR53Policy:
-                  Type: 'AWS::IAM::ManagedPolicy'
-                  Properties:
-                    PolicyDocument:
-                      Version: '2012-10-17'
-                      Statement:
-                        - Action:
-                            - route53:CreateHostedZone
-                            - route53:DisassociateVPCFromHostedZone
-                            - route53:GetHostedZone
-                            - route53:ListHostedZones
-                            - route53:ChangeResourceRecordSets
-                            - route53:CreateQueryLoggingConfig
-                            - route53:CreateVPCAssociationAuthorization
-                            - route53:UpdateHealthCheck
-                            - route53:DeleteHealthCheck
-                            - route53:ListHostedZonesByName
-                            - route53:DeleteVPCAssociationAuthorization
-                            - route53:CreateHealthCheck
-                            - route53:ListResourceRecordSets
-                            - route53:DeleteHostedZone
-                            - route53:AssociateVPCWithHostedZone
-                            - route53:UpdateHostedZoneComment
-                            - route53:DeleteQueryLoggingConfig
-                            - elasticloadbalancing:DescribeLoadBalancers
-                          Resource: "*"
-                          Effect: Allow
-                    Roles:
-                    - !Ref IAMRole
-                RancherManagedEKSPolicy:
-                  Type: 'AWS::IAM::ManagedPolicy'
-                  Properties:
-                    PolicyDocument:
-                      Version: '2012-10-17'
-                      Statement:
-                        - Action:
-                            - cloudformation:*
-                            - eks:*
-                            - ec2:DescribeSecurityGroups
-                            - ec2:DescribeSubnets
-                            - ec2:DescribeVpcs
-                            - ec2:DescribeAccountAttributes
-                            - ec2:DescribeAddresses
-                            - ec2:DescribeInternetGateways
-                          Resource: "*"
-                          Effect: Allow
-                    Roles:
-                    - !Ref IAMRole
-                IamInstanceProfile:
-                  Type: "AWS::IAM::InstanceProfile"
-                  Properties:
-                    Roles:
-                    - !Ref IAMRole
-                EC2Instance:
-                  Type: "AWS::EC2::Instance"
-                  Properties:
-                    ImageId: !Ref LINUXBASE
-                    InstanceType: "t2.micro"
-                    IamInstanceProfile: !Ref IamInstanceProfile
-                    SubnetId: !Ref Subnet
-                    SecurityGroupIds:
-                      - !Ref 'SecurityGroup'
-                    Tags:
-                    - Key: "Name"
-                      Value: "TempRancherInstance"
-                    UserData:
-                      Fn::Base64: !Sub |
-                        #cloud-config
-                        repo_upgrade: none
-        - name: "getInstanceId"
-          action: aws:executeAwsApi
-          onFailure: "step:CFNSignalEnd"
-          inputs:
-            Service: ec2
-            Api: DescribeInstances
-            Filters:  
-            - Name: "tag:Name"
-              Values: [ "TempRancherInstance" ]
-            - Name: "instance-state-name"
-              Values: [ "running" ]
-          outputs:
-          - Name: InstanceId
-            Selector: "$.Reservations[0].Instances[0].InstanceId"
-            Type: String
-        - name: "DownloadAndRunRancherInstallScript"
-          action: "aws:runCommand"
-          onFailure: "step:signalfailure"
-          inputs:
-            DocumentName: "AWS-RunShellScript"
-            InstanceIds:
-              - "{{getInstanceId.InstanceId}}"
-            CloudWatchOutputConfig:
-              CloudWatchOutputEnabled: "true"
-              CloudWatchLogGroupName: !Sub '/aws/Quick_Start/${AWS::StackName}'
-            Parameters:
-              commands:
-                - wget -O /tmp/rancher_install.sh https://{{QSS3BucketName}}.s3.{{QSS3BucketRegion}}.amazonaws.com/{{QSS3KeyPrefix}}scripts/rancher_install.sh
-                - /bin/su - ec2-user -c 'cd /tmp && sh -x rancher_install.sh {{Region}} {{QSS3BucketName}} {{QSS3KeyPrefix}} {{QSS3BucketRegion}} {{EKSClusterName}} {{DomainName}}'
-        # Determines if CFN Needs to be Signaled or if Work flow should just end
-        - name: CFNSignalEnd
-          action: aws:branch
-          inputs:
-            Choices:
-            - NextStep: signalsuccess
-              Not: 
-                Variable: "{{StackName}}"
-                StringEquals: ""
-            - NextStep: sleepend
-              Variable: "{{StackName}}"
-              StringEquals: ""
-        # If all steps complete successfully signals CFN of Success
-        - name: "signalsuccess"
-          action: "aws:executeAwsApi"
-          nextStep: "deleteStack"
-          inputs:
-            Service: cloudformation
-            Api: SignalResource
-            LogicalResourceId: "SSMWaitCondition"
-            StackName: "{{StackName}}"
-            Status: SUCCESS
-            UniqueId: "{{getInstanceId.InstanceId}}"
-        # If CFN Signl Not Needed this sleep ends work flow
-        - name: "sleepend"
-          action: "aws:sleep"
-          nextStep: "deleteStack"
-          inputs:
-            Duration: PT1S
-        # If any steps fails signals CFN of Failure
-        - name: "signalfailure"
-          action: "aws:executeAwsApi"
-          nextStep: "deleteStack"
-          inputs:
-            Service: cloudformation
-            Api: SignalResource
-            LogicalResourceId: "SSMWaitCondition"
-            StackName: "{{StackName}}"
-            Status: FAILURE
-            UniqueId: "{{getInstanceId.InstanceId}}"
-        - name: deleteStack
-          action: aws:deleteStack
-          isEnd: true
-          onFailure: Continue
-          inputs:
-            StackName: "InstallRancher"
+                commands:
+                  - wget -O /tmp/rancher_install.sh https://{{QSS3BucketName}}.s3.{{QSS3BucketRegion}}.amazonaws.com/{{QSS3KeyPrefix}}scripts/rancher_install.sh
+                  - /bin/su - ec2-user -c 'cd /tmp && sh -x rancher_install.sh {{Region}} {{QSS3BucketName}} {{QSS3KeyPrefix}} {{QSS3BucketRegion}} {{EKSClusterName}} {{DomainName}}'
+          # Determines if CFN Needs to be Signaled or if Work flow should just end
+          - name: CFNSignalEnd
+            action: aws:branch
+            inputs:
+              Choices:
+                - NextStep: signalsuccess
+                  Not:
+                    Variable: "{{StackName}}"
+                    StringEquals: ""
+                - NextStep: sleepend
+                  Variable: "{{StackName}}"
+                  StringEquals: ""
+          # If all steps complete successfully signals CFN of Success
+          - name: "signalsuccess"
+            action: "aws:executeAwsApi"
+            nextStep: "deleteStack"
+            inputs:
+              Service: cloudformation
+              Api: SignalResource
+              LogicalResourceId: "SSMWaitCondition"
+              StackName: "{{StackName}}"
+              Status: SUCCESS
+              UniqueId: "{{getInstanceId.InstanceId}}"
+          # If CFN Signl Not Needed this sleep ends work flow
+          - name: "sleepend"
+            action: "aws:sleep"
+            nextStep: "deleteStack"
+            inputs:
+              Duration: PT1S
+          # If any steps fails signals CFN of Failure
+          - name: "signalfailure"
+            action: "aws:executeAwsApi"
+            nextStep: "deleteStack"
+            inputs:
+              Service: cloudformation
+              Api: SignalResource
+              LogicalResourceId: "SSMWaitCondition"
+              StackName: "{{StackName}}"
+              Status: FAILURE
+              UniqueId: "{{getInstanceId.InstanceId}}"
+          - name: deleteStack
+            action: aws:deleteStack
+            isEnd: true
+            onFailure: Continue
+            inputs:
+              StackName: "InstallRancher"
   LambdaSSMExecute:
     Type: AWS::Lambda::Function
     Properties:
@@ -447,15 +458,15 @@ Resources:
               import cfnresponse
               import boto3, os, json
               from botocore.vendored import requests
-          
+
               ssm_cl = boto3.client('ssm')
               ecr_cl = boto3.client('ecr')
               req_type = event['RequestType']
               print(event)
-          
+
               SUCCESS = "SUCCESS"
               FAILED = "FAILED"
-          
+
               def start_ssmautomation(event):
                   doc_name = event['ResourceProperties']['DocumentName']
                   stack_name = event['ResourceProperties']['StackName']
@@ -471,7 +482,7 @@ Resources:
                   domain_name = event['ResourceProperties']['DomainName']
                   if qs_bucket == "aws-quickstart":
                     qs_bucket = "aws-quickstart-" + qs_region
-          
+
                   start_automation = ssm_cl.start_automation_execution(
                       DocumentName= doc_name,
                       Parameters={
@@ -510,7 +521,7 @@ Resources:
                           ]
                       },
                   )
-          
+
                   cfnresponse.send(event, context, SUCCESS, start_automation, start_automation['AutomationExecutionId'])
               
               def delete_image(event):
@@ -521,7 +532,7 @@ Resources:
                   'Delete': delete_image,
                   'Update': start_ssmautomation
               }
-          
+
               try:
                   actions.get(req_type)(event)    
               except Exception as exc:
@@ -530,7 +541,7 @@ Resources:
                   cfnresponse.send(event, context, FAILED, error_msg)
   ExecuteSSMAutomation:
     Type: Custom::ExecuteSSMAutomation
-    Properties: 
+    Properties:
       ServiceToken: !GetAtt LambdaSSMExecute.Arn
       DocumentName: !Ref RancherInstallerSetup
       StackName: !Ref AWS::StackName
@@ -539,26 +550,26 @@ Resources:
       QSS3KeyPrefix: !Ref QSS3KeyPrefix
       AutomationAssumeRole: !GetAtt SSMAutomationRole.Arn
       PrivateSubnet1ID: !Ref PrivateSubnet1ID
-      AWSRegion: !Ref 'AWS::Region'
+      AWSRegion: !Ref "AWS::Region"
       EKSClusterName: !Ref EKSClusterName
-      IAMRole: !Ref 'IAMRole'
-      SecurityGroup: !Ref 'SecurityGroup'
-      DomainName: !Ref 'DomainName'
+      IAMRole: !Ref "IAMRole"
+      SecurityGroup: !Ref "SecurityGroup"
+      DomainName: !Ref "DomainName"
   SSMWaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
-  SSMWaitCondition: 
+  SSMWaitCondition:
     Type: AWS::CloudFormation::WaitCondition
     CreationPolicy:
       ResourceSignal:
         Timeout: PT60M
         Count: 1
-    DependsOn: 
+    DependsOn:
       - ExecuteSSMAutomation
-    Properties: 
-      Handle: 
+    Properties:
+      Handle:
         Ref: "SSMWaitHandle"
       Timeout: "3600"
       Count: 1
 Outputs:
   DomainName:
-    Value: !If [NoDomainSpecified, 'rancher.aws.private', !Ref DomainName]
+    Value: !If [NoDomainSpecified, "rancher.aws.private", !Ref DomainName]
